@@ -2,11 +2,14 @@ import numpy as np
 from scipy.stats import norm, poisson
 from scipy.misc import comb
 import csv
+import thread
+
 
 p_min = 0
-p_max = 150
+p_max = 100
 numb_proteins = (p_max - p_min + 1)
 numb_states = numb_proteins*2
+p_range =np.arange(p_min, p_max+1)
 T = 100
 delta_t = 5
 numb = np.zeros(T, np.int)
@@ -54,10 +57,10 @@ def p_m(n_new, n_old, g, t):
     k = k_s if g == 1 else 0
     mean_n = (k / k_m) * (1 - np.exp(- k_m * t ))
     return np.sum( vec_p_m_for_p(np.arange(0, n_old+1), n_new, n_old, mean_n, k_m) )
-vec_p_m = np.vectorize(p_m)
+# vec_p_m = np.vectorize(p_m)
 
 ## initial state distribution and transition matrix
-pi  = np.ones(numb_states, dtype=np.float128) / numb_states     # assuming 2000 states, 1000 protein number when gene is OFF, and 1000 for when gene is ON
+pi  = np.ones(numb_states, dtype=np.float128) / numb_states     # uniform probability for initial states
 F = np.zeros(numb_states*T, dtype=np.float128).reshape(numb_states, T)            # Forward equations for the HMM
 B = np.zeros(numb_states*T, dtype=np.float128).reshape(numb_states, T)            # Backward equations for the HMM
 tmp = map(lambda p: p_s(signal[0], p), np.arange(p_min, p_max+1))
@@ -75,12 +78,22 @@ for t in xrange(T):
 for new_state in xrange(2):
     G[new_state, ...] = map(lambda g: p_g(new_state, g, delta_t), np.arange(0, 2))
 
-for p_old in np.arange(p_min, p_max + 1):
+def calculate_transitions(p_old, g, P):
+    P[p_old, ...] = [p_m(p_new, p_old, g, delta_t) for p_new in p_range]
+
+# calculate_transitions(2, 1, P1)
+# print P1
+# exit()
+
+
+for p_old in p_range:
     # P0[p_old, ...] = vec_p_m( np.arange(p_min, p_max+1), p_old, 0, delta_t )
     # P1[p_old, ...] = vec_p_m( np.arange(p_min, p_max+1), p_old, 1, delta_t )
-    P0[p_old, ...] = [p_m(p_new, p_old, 0, delta_t) for p_new in np.arange(p_min, p_max+1)]
-    P1[p_old, ...] = [p_m(p_new, p_old, 1, delta_t) for p_new in np.arange(p_min, p_max+1)]
+    # P0[p_old, ...] = [p_m(p_new, p_old, 0, delta_t) for p_new in np.arange(p_min, p_max+1)]
+    # P1[p_old, ...] = [p_m(p_new, p_old, 1, delta_t) for p_new in np.arange(p_min, p_max+1)]
     # P0[p_old, ...] = map(lambda p_new: p_m(p_new, p_old, 0, delta_t), np.arange(p_min, p_max+1))
     # P1[p_old, ...] = map(lambda p_new: p_m(p_new, p_old, 1, delta_t), np.arange(p_min, p_max+1))
+    # thread.start_new(calculate_transitions, (p_old, 0, P0))
+    calculate_transitions(p_old, 1, P1)
     print p_old
-print P0[10, ...]
+print P1
