@@ -43,10 +43,10 @@ signal = df$signal
 
 ## initialization
 p0 = round(signal[1]/alpha)            # initial concentration of the protein
-k_ON = .5       # rate of switching to the ON state
-k_OFF = .5      # rate of switching to the OFF state
+k_ON = .9       # rate of switching to the ON state
+k_OFF = .1      # rate of switching to the OFF state
 K = k_ON + k_OFF #
-k_s = 2.5        # synthesis (production) rate
+k_s = 1.5        # synthesis (production) rate
 k_m = 0.01       # degradation rate
 
 # ## initialization
@@ -63,7 +63,7 @@ p_max = 100
 p_min = 0
 T = length(times)
 delta_t = times[2] - times[1]
-T = 105
+# T = 105
 total_states = (p_max - p_min + 1)*2
 ## initial state distribution and transition matrix
 pi  = rep(1 , total_states)                # assuming 2000 states, 1000 protein number when gene is OFF, and 1000 for when gene is ON
@@ -85,15 +85,15 @@ for(new_state in 1:2)
   G[new_state, ] = log(sapply(0:1, p_g, g_new=new_state, t=delta_t))
 for(p in p_min:p_max) {
   tmp = log(sapply(p_min:p_max, p_m, n_old=p, t=delta_t, g=0))
-  tmp[which(tmp < -20)] = -Inf
-  P0[(p+1), ] = x
+  tmp[which(tmp < -50)] = -Inf
+  P0[(p+1), ] = tmp 
   tmp = log(sapply(p_min:p_max, p_m, n_old=p, t=delta_t, g=1))
-  tmp[which(tmp < -20)] = -Inf
+  tmp[which(tmp < -50)] = -Inf
   P1[(p+1), ] = tmp
 }
 
 for (t in 2:T) {
-  print(t)
+  # print(t)
   for (p in p_min:p_max) {
     # to reduce the complexity, I only go one standard deviation around p value
     # the underlying assumtion is that a very big change from one time point to the next is highly improbable

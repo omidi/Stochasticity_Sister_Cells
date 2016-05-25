@@ -8,8 +8,8 @@ sigma_b2 = 50^2
 
 ## initialization
 p0 = 14            # initial concentration of the protein
-k_ON = .15       # rate of switching to the ON state
-k_OFF = .85      # rate of switching to the OFF state
+k_ON = .6       # rate of switching to the ON state
+k_OFF = .8      # rate of switching to the OFF state
 K = k_ON + k_OFF
 k_s = 2.432       # synthesis (production) rate
 k_m = 0.0154       # degradation rate
@@ -40,7 +40,7 @@ states = c()
 numbs = c()
 t = 0
 times = c()
-while (t < 100*5) {
+while (t < 200*5) {
   states = c(states, curr_state)
   numbs = c(numbs, curr_num)
   times = c(times, t)
@@ -50,15 +50,16 @@ while (t < 100*5) {
   } else {
     curr_state = 0
   }
-  n = seq(0, 100)
+  n = seq(0, 200)
   s = sapply(n, p_m, n_old = curr_num, g = curr_state, t = 5)
   r = runif(1)
   curr_num = n[cumsum(s) >= r][1]
   t = t + 5
 }
 
-# states[which(states == 0)] = -20
+# states[which(states == 0)] = -50
 # states[which(states == 1)] = 0
-plot(states, ylim = c(0, max(numbs)), pch=15, cex= 3.1)
+plot(states, ylim = c(0, max(numbs)), pch=15, cex=.5)
 lines(numbs, type = 'l')
-signal = sapply(numbs, function(x) rnorm(1, alpha*x, sqrt(sigma_b2 + beta*x)) )
+signal = sapply(numbs, function(x) rnorm(1, alpha*x, sqrt(sigma_b2 + beta*x)))
+df = data.frame(time=times, signal=signal, numb=numbs, states=states)
