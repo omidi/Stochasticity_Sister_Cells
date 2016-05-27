@@ -164,37 +164,3 @@ for t in xrange(1, T):
 
 
 print np.sum(np.exp(F[:, T-1])) , np.log(np.sum(np.exp(F[:, T-1])))
-# print p_range[-1] + p_max
-exit()
-
-# for (t in 2:T) {
-#   # print(t)
-#   for (p in p_min:p_max) {
-#     # to reduce the complexity, I only go one standard deviation around p value
-#     # the underlying assumtion is that a very big change from one time point to the next is highly improbable
-#     p_std = ceiling(sqrt(sigma_b2 + beta*p))
-#     p_std = 30  # should be changed!
-#     p_lower_bound = ifelse((p-p_std)<0, 0,  p-p_std)
-#     p_upper_bound = ifelse((p+p_std)>p_max, p_max,  p+p_std)
-#     # states where the gene is OFF
-#     F[(p+1) ,t] = log( sum( exp(P0[(p+1), (p_lower_bound + 1):(p+1)] + G[1,1] +
-#                                F[ (p_lower_bound + 1):(p+1) ,(t-1)] + S[t, (p+1)] )) +
-#                        sum( exp(P0[(p+1), (p_lower_bound + 1):(p+1)] + G[1,2] +
-#                                  F[ (p_lower_bound + p_max + 1):(p+p_max+1) ,(t-1)] + S[t, (p+1)] )))
-#
-#     B[(p+1), T-t+1] = log(sum( exp(P0[(p_lower_bound + 1):(p+1), (p+1)] + G[1,1] +
-#                                B[ (p_lower_bound + 1):(p+1) ,(T-t+2) ] +S[(T-t+2), (p+1)] ) ) +
-#                           sum( exp(P0[(p_lower_bound + 1):(p+1), (p+1)] + G[2,1] +
-#                                  B[ (p_lower_bound + p_max + 1):(p+p_max+1) ,(T-t+2) ] + S[(T-t+2), (p+1)])))
-#     # states where the gene is ON
-#     F[(p + 2 + p_max) ,t] = log(sum( exp(P1[(p+1), (p_lower_bound + 1):(p_upper_bound + 1)] + G[2,1] +
-#                                      F[ (p_lower_bound +1):(p_upper_bound + 1) ,(t-1)] + S[t, (p+1)] )) +
-#                             sum( exp(P1[(p+1), (p_lower_bound + 1):(p_upper_bound + 1)] + G[2,2] +
-#                                      F[ (p_lower_bound + p_max + 1):(p_upper_bound + p_max + 1) ,(t-1)] + S[t, (p+1)]) ))
-#     B[(p+2+p_max), T-t+1] = log(sum( exp(P1[(p_lower_bound + 1):(p_upper_bound + 1), (p+1)] + G[1,2] +
-#                                    B[ (p_lower_bound + 1):(p_upper_bound + 1) ,(T-t+2) ] + S[(T-t+2), (p+1)] ) ) +
-#                             sum( exp(P1[(p_lower_bound + 1):(p_upper_bound + 1), (p+1)] + G[2,2] +
-#                                    B[ (p_lower_bound + p_max + 1):(p_upper_bound + p_max + 1) ,(T-t+2) ] + S[(T-t+2), (p+1)] ) ) )
-#
-#   }
-# }
