@@ -11,7 +11,7 @@ p_max = 100
 numb_proteins = (p_max - p_min + 1)
 numb_states = numb_proteins*2
 p_range =np.arange(p_min, p_max+1)
-T = 100
+T = 200
 delta_t = 5
 numb = np.zeros(T, np.int)
 signal = np.zeros(T, dtype=np.float64)
@@ -35,8 +35,8 @@ p0 = round(signal[1]/alpha)            # initial concentration of the protein
 k_ON = .5       # rate of switching to the ON state
 k_OFF = .5      # rate of switching to the OFF state
 K = k_ON + k_OFF #
-k_s = 2.5        # synthesis (production) rate
-k_m = 0.01       # degradation rate
+k_s = 2.4032        # synthesis (production) rate
+k_m = 0.0154       # degradation rate
 
 
 def p_s(s, p):
@@ -134,42 +134,37 @@ for t in xrange(1, T):
     for p in p_range:
         # to avoid considering states that are highly improbably, we only
         # consider a boundary that is set by p_std
-        p_std = 30  # should be changed!
+        p_std = 50  # should be changed!
         p_lower_bound = 0 if (p-p_std) < 0 else (p-p_std)
         p_upper_bound = p_max if (p+p_std) > p_max else (p+p_std)
         # calculating Forward matrix
         F[p, t] = np.sum(exp(np.array(G[0, 0] + P0[p_lower_bound:(p+1), p] + F[p_lower_bound:(p+1), (t-1)],
                                       dtype=np.float128)))
-        F[p, t] = log(np.sum(exp(np.array(G[0, 1] + P1[p_lower_bound:p_upper_bound, p] + \
-                                          F[(p_lower_bound+p_max):(p_upper_bound+p_max), (t-1)],
+        F[p, t] = log(np.sum(exp(np.array(G[1, 0] + P1[p_lower_bound:p_upper_bound, p] + \
+                                          F[(p_lower_bound+p_max+1):(p_upper_bound+p_max+1), (t-1)],
                                           dtype=np.float128))) + F[p, t]) + S[t, p]
-        F[p + p_max + 1, t] = np.sum(exp(np.array(G[1, 0] + P0[p_lower_bound:(p+1), p] + F[p_lower_bound:(p+1), (t-1)],
+        F[p + p_max + 1, t] = np.sum(exp(np.array(G[0, 1] + P0[p_lower_bound:(p+1), p] + F[p_lower_bound:(p+1), (t-1)],
                                                   dtype=np.float128)))
-        F[p + p_max + 1, t] = log(np.sum(exp(np.array(G[1, 1] + P1[p_lower_bound:p_upper_bound, p] + \
-                                                  F[(p_lower_bound+p_max+1):(p_upper_bound+p_max+1), (t-1)],
-                                                  dtype=np.float128))) + F[p + p_max, t]) + S[t, p]
-        print (p_lower_bound+p_max+1), (p_upper_bound+p_max+1), (F[p_upper_bound+p_max+1, t-1])
+        F[p + p_max + 1, t] = log(np.sum(exp(np.array(G[1, 1] + P1[p_lower_bound:p_upper_bound, p] +
+                                                      F[(p_lower_bound+p_max+1):(p_upper_bound+p_max+1), (t-1)],
+                                                      dtype=np.float128))) + F[p + p_max + 1, t]) + S[t, p]
         # calculating Backward matrix
-        B[p, (T - t - 1)] = np.sum(exp(np.array(G[0, 0] + P0[p, p_lower_bound:(p+1)] + B[p_lower_bound:(p+1), T-t] + \
+        B[p, (T - t - 1)] = np.sum(exp(np.array(G[0, 0] + P0[p, p_lower_bound:(p+1)] + B[p_lower_bound:(p+1), T-t] +
                                                 S[T-t, p_lower_bound:(p+1)]), dtype=np.float128))
-        B[p, (T - t - 1)] = log(np.sum(exp(np.array(G[1, 0] + P0[p, p_lower_bound:(p+1)] + \
-                                                B[p_lower_bound:(p+1), T-t] + \
-                                                S[T-t, p_lower_bound:(p+1)]), dtype=np.float128)) + B[p, (T - t - 1)])
+        B[p, (T - t - 1)] = log(np.sum(exp(np.array(G[0, 1] + P0[p, p_lower_bound:(p+1)] +
+                                                    B[(p_lower_bound+p_max+1):(p+p_max+2), T-t] +
+                                                    S[T-t, p_lower_bound:(p+1)]), dtype=np.float128)) + B[p, (T - t - 1)])
+        B[p + p_max + 1, (T - t - 1)] = np.sum(exp(np.array(G[1, 0] + P1[p, p_lower_bound:p_upper_bound] +
+                                                            B[p_lower_bound:p_upper_bound, T-t] +
+                                                            S[T-t, p_lower_bound:p_upper_bound]), dtype=np.float128))
+        B[p + p_max + 1, (T - t - 1)] = log(np.sum(exp(np.array(G[1, 1] + P1[p, p_lower_bound:p_upper_bound] +
+                                                                B[(p_lower_bound+p_max+1):(p_upper_bound+p_max+1), T-t] +
+                                                                S[T-t, p_lower_bound:p_upper_bound]), dtype=np.float128))
+                                            + B[p+p_max, (T - t - 1)])
 
-        B[p + p_max + 1, (T - t - 1)] = np.sum(exp(np.array(G[0, 1] + P1[p, p_lower_bound:p_upper_bound] + B[p_lower_bound:p_upper_bound, T-t] + \
-                                                S[T-t, p_lower_bound:p_upper_bound]), dtype=np.float128))
 
-        B[p + p_max + 1, (T - t - 1)] = log(np.sum(exp(np.array(G[1, 1] + P1[p, p_lower_bound:p_upper_bound] + \
-                                                B[(p_lower_bound+p_max):(p_upper_bound+p_max), T-t] + \
-                                                S[T-t, p_lower_bound:p_upper_bound]), dtype=np.float128)) + B[p+p_max, (T - t - 1)])
-
-
-
-print p_range + p_max + 2
-print np.sum(exp(F[..., T-1]))
-print log(np.sum(exp(F[..., T-1])))
-print F[:, 1]
-print p_range[-1] + p_max
+print np.sum(np.exp(F[:, T-1])) , np.log(np.sum(np.exp(F[:, T-1])))
+# print p_range[-1] + p_max
 exit()
 
 # for (t in 2:T) {

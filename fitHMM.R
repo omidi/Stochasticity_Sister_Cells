@@ -31,6 +31,7 @@ p_m = function(n_new, n_old, g, t) {
   sum(sapply(seq(0, n_old), f))
 }
 
+
 # loading the raw data
 # df = read.csv('~/Dropbox/Communication/Gene.Expression.Inheritance/Data 29.04.16/4.11 with mitosis.csv',
 #               header=FALSE)
@@ -43,10 +44,10 @@ signal = df$signal
 
 ## initialization
 p0 = round(signal[1]/alpha)            # initial concentration of the protein
-k_ON = .9       # rate of switching to the ON state
-k_OFF = .1      # rate of switching to the OFF state
+k_ON = .5       # rate of switching to the ON state
+k_OFF = .5      # rate of switching to the OFF state
 K = k_ON + k_OFF #
-k_s = 1.5        # synthesis (production) rate
+k_s = 2.5        # synthesis (production) rate
 k_m = 0.01       # degradation rate
 
 # ## initialization
@@ -86,14 +87,14 @@ for(new_state in 1:2)
 for(p in p_min:p_max) {
   tmp = log(sapply(p_min:p_max, p_m, n_old=p, t=delta_t, g=0))
   tmp[which(tmp < -50)] = -Inf
-  P0[(p+1), ] = tmp 
+  P0[(p+1), ] = tmp
   tmp = log(sapply(p_min:p_max, p_m, n_old=p, t=delta_t, g=1))
   tmp[which(tmp < -50)] = -Inf
   P1[(p+1), ] = tmp
 }
 
 for (t in 2:T) {
-  # print(t)
+  print(t)
   for (p in p_min:p_max) {
     # to reduce the complexity, I only go one standard deviation around p value
     # the underlying assumtion is that a very big change from one time point to the next is highly improbable
@@ -108,7 +109,7 @@ for (t in 2:T) {
                                  F[ (p_lower_bound + p_max + 1):(p+p_max+1) ,(t-1)] + S[t, (p+1)] )))
 
     B[(p+1), T-t+1] = log(sum( exp(P0[(p_lower_bound + 1):(p+1), (p+1)] + G[1,1] +
-                               B[ (p_lower_bound + 1):(p+1) ,(T-t+2) ] +S[(T-t+2), (p+1)] ) ) +
+                               B[ (p_lower_bound + 1):(p+1) , (T-t+2)] + S[(T-t+2), (p+1)] ) ) +
                           sum( exp(P0[(p_lower_bound + 1):(p+1), (p+1)] + G[2,1] +
                                  B[ (p_lower_bound + p_max + 1):(p+p_max+1) ,(T-t+2) ] + S[(T-t+2), (p+1)])))
     # states where the gene is ON

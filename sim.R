@@ -8,7 +8,7 @@ sigma_b2 = 50^2
 
 ## initialization
 p0 = 14            # initial concentration of the protein
-k_ON = .6       # rate of switching to the ON state
+k_ON = .4       # rate of switching to the ON state
 k_OFF = .8      # rate of switching to the OFF state
 K = k_ON + k_OFF
 k_s = 2.432       # synthesis (production) rate
@@ -59,7 +59,9 @@ while (t < 200*5) {
 
 # states[which(states == 0)] = -50
 # states[which(states == 1)] = 0
-plot(states, ylim = c(0, max(numbs)), pch=15, cex=.5)
-lines(numbs, type = 'l')
+plot(times, states, ylim = c(0, max(numbs)), pch=15, cex=.5, col=0)
+abline(v=times[which(states==1)])
+lines(times, numbs, type = 'l')
 signal = sapply(numbs, function(x) rnorm(1, alpha*x, sqrt(sigma_b2 + beta*x)))
 df = data.frame(time=times, signal=signal, numb=numbs, states=states)
+# write.table(df, "data.simulated", row.names = FALSE, col.names = TRUE, quote = FALSE, sep='\t)
