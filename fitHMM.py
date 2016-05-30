@@ -46,7 +46,7 @@ def objective(x):
     print logL
     return -logL
 
-res = optimize.fmin(objective, [1./5, 1./5, 2.5])
+res = optimize.fmin(objective, [1./5, 1./5, 3.])
 print res
 
 exit()
