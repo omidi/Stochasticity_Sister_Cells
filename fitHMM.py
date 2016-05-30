@@ -43,9 +43,10 @@ def objective(x):
         return np.Inf
     propg = propagator(round(signal[1]/alpha), x[0], x[1], x[2], 0.01)   # half-life is fixed to 0.01
     logL, F = loglikelihood(T, pi, Obs, propg)
+    print logL
     return -logL
 
-res = optimize.fmin_cg(objective, [1./10, 1./10, 1.45])
+res = optimize.fmin(objective, [1./10, 1./10, 1.45])
 print res
 
 exit()
