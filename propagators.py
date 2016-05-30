@@ -52,14 +52,14 @@ class propagator:
         for index, p_old in enumerate(p_range):
             self.P0[index, ...] = self.calculate_transitions(p_old, 0)
             self.P1[index, ...] = self.calculate_transitions(p_old, 1)
-        self.G = np.zeros(4, dtype=np.float).reshape(2,2)
+        self.G = np.zeros(4, dtype=np.float).reshape(2, 2)
         for new_state in xrange(2):
             self.G[new_state, ...] = log(map(lambda g: self.p_g(new_state, g, delta_t), np.arange(0, 2)))
 
 
     def p_g(self, g_new, g_old, t):
-        return exp(- self.K * t) * (1 if g_new == g_old else 0) + \
-            (1 - exp(- self.K * t)) * ( (self.k_ON if g_new == 1 else self.k_OFF) / self.K)
+        return (1 - exp(- self.K * t)) * ((self.k_ON if g_new == 1 else self.k_OFF) / self.K) + \
+               exp(- self.K * t) * (1 if g_new == g_old else 0)
 
 
     def p_g_markov(self, t):

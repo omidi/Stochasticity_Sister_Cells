@@ -20,7 +20,7 @@ with open("data.simulated") as inf:
         time[i] = int(rec["time"])
         state[i] = int(rec["states"])
 
-propg = propagator(round(signal[1]/alpha), 1./10, 1./10, 1.045, 0.01)
+# propg = propagator(round(signal[1]/alpha), 1./5, 1./5, 2.5, 0.0154)
 
 def p_s(s, p):
     return norm.pdf(s, p*alpha, np.sqrt(sigma_b2 + beta*p))
@@ -41,12 +41,12 @@ def objective(x):
         return np.Inf
     if(x[2] > 5 or x[2] < 0):
         return np.Inf
-    propg = propagator(round(signal[1]/alpha), x[0], x[1], x[2], 0.01)   # half-life is fixed to 0.01
+    propg = propagator(round(signal[1]/alpha), x[0], x[1], x[2], 0.0154)   # half-life is fixed to 0.01
     logL, F = loglikelihood(T, pi, Obs, propg)
     print logL
     return -logL
 
-res = optimize.fmin(objective, [1./10, 1./10, 1.45])
+res = optimize.fmin(objective, [1./5, 1./5, 2.5])
 print res
 
 exit()
