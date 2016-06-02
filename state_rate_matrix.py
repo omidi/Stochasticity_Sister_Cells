@@ -152,12 +152,13 @@ if __name__ == '__main__':
             e = objective(self.state)
             return e
     model = TelegramModel(x0)
-    model.Tmax = 20000.0
-    model.steps = 1500
+    model.Tmax = 40000.0
+    model.steps = 2500
     model.Tmin = 2.5
     params, logL = model.anneal()
 
     print params
-    res = optimize.fmin(objective, params)
+    print logL
+    # res = optimize.fmin(objective, params)
 
     res_file.close()
