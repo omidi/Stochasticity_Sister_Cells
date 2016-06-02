@@ -5,6 +5,9 @@ from constants import *
 import scipy.optimize as optimize
 import csv
 import os
+from simanneal import Annealer
+import random
+
 
 def state_rate_matrix(k_ON, k_OFF, k_s, k_d, p_max):
     I = np.identity(p_max)
@@ -126,7 +129,35 @@ if __name__ == '__main__':
         ]))
         return -logL
 
-    x = [1./2, 1./2, 3.]
-    print objective(x)
-    res = optimize.fmin(objective, x)
+    np.random.seed(555)
+    x0 = [.05, .05, .15]
+    # print objective(x0)
+    # res = optimize.fmin(objective, x0)
+    # res = optimize.basinhopping(objective, x0, niter=100,
+    #                             disp=True, niter_success=10)
+    # rranges = (slice(0.0001, 4, 0.001), slice(0.001, 4, 0.001), slice(0.0001, 7, 0.05), )
+    # res = optimize.brute(objective, rranges, full_output=True,
+    #                      finish=optimize.fmin)
+
+    class TelegramModel(Annealer):
+        def move(self):
+            k_ON = random.uniform(-.01, .01)
+            k_OFF = random.uniform(-.01, .01)
+            k_s = random.uniform(-.05, .05)
+            self.state[0] = self.state[0] + k_ON
+            self.state[1] = self.state[1] + k_OFF
+            self.state[2] = self.state[2] + k_s
+
+        def energy(self):
+            e = objective(self.state)
+            return e
+    model = TelegramModel(x0)
+    model.Tmax = 20000.0
+    model.steps = 1000
+    model.Tmin = 2.5
+    params, logL = model.anneal()
+
+    print params
+    res = optimize.fmin(objective, params)
+
     res_file.close()
