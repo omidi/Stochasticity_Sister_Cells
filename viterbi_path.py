@@ -102,3 +102,4 @@ if __name__ == '__main__':
                 str(x_t / p_max) + '\n',
             ]))
 
+    os.system('Rscript plot_viterbi_res.R "%s" %d' % (res_filename, args.column + 1))
