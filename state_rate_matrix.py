@@ -153,7 +153,7 @@ if __name__ == '__main__':
             return e
     model = TelegramModel(x0)
     model.Tmax = 20000.0
-    model.steps = 1000
+    model.steps = 1500
     model.Tmin = 2.5
     params, logL = model.anneal()
 
