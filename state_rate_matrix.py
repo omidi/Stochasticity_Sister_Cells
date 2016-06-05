@@ -5,9 +5,8 @@ from constants import *
 import scipy.optimize as optimize
 import csv
 import os
-# from simanneal import Annealer
+from simanneal import Annealer
 import random
-import math
 
 
 def state_rate_matrix(k_ON, k_OFF, k_s, k_d, p_max):
@@ -108,8 +107,11 @@ if __name__ == '__main__':
     deg_rate = args.deg_rate
     T = len(time)
     p_max = int(max(signal)/alpha) + 30
+    res_file_name = os.path.join(args.dest, "cell_%d_%s" % (args.column+1, os.path.basename(args.input)))
+    res_file = open(res_file_name, 'w')
+    res_file.write('\t'.join(['k_ON', 'k_OFF', 'k_s', 'deg', 'logL\n']))
     def objective(x):
-        # print x
+        print x
         if(x[0] > 5 or x[0] < 0):
             return np.Inf
         if(x[1] > 5 or x[1] < 0):
@@ -117,17 +119,18 @@ if __name__ == '__main__':
         if(x[2] > 10 or x[2] < 0):
             return np.Inf
         logL = log_likelihood(signal, x)
-        # print logL
-        # res_file.write('\t'.join([
-        #     str(x[0]),
-        #     str(x[1]),
-        #     str(x[2]),
-        #     str(deg_rate),
-        #     str(logL) + '\n',
-        # ]))
+        print logL
+        res_file.write('\t'.join([
+            str(x[0]),
+            str(x[1]),
+            str(x[2]),
+            str(deg_rate),
+            str(logL) + '\n',
+        ]))
         return -logL
 
-    # np.random.seed(555)
+    np.random.seed(555)
+    x0 = [.05, .05, .15]
     # print objective(x0)
     # res = optimize.fmin(objective, x0)
     # res = optimize.basinhopping(objective, x0, niter=100,
@@ -136,126 +139,26 @@ if __name__ == '__main__':
     # res = optimize.brute(objective, rranges, full_output=True,
     #                      finish=optimize.fmin)
 
-    class TelegramModel:
-        def __init__(self, x0):
-            self.temp = 500.0
-            self.n_iter = 150.
-            self.min_temp = .5
-            # self.step = (self.temp - self.min_temp) / float(self.n_iter)
-            self.step = self.n_iter
-            self.state = x0
-            self.energy = self.calculate_energy(x0)
-            while math.isnan(self.energy):
-                print "here"                
-                self.state = self.move()
-                self.energy = self.calculate_energy(self.state)
-            self.best_state = self.state
-            self.min_energy = self.energy
-
-        def set_temp(self, new_temp):
-            self.temp = new_temp
-
-        def set_step(self, new_step):
-            self.step = new_step
-
+    class TelegramModel(Annealer):
         def move(self):
-            new_state = [0, 0, 0]
-            while True:
-                r = random.uniform(-.01, .01)
-                if (self.state[0] + r) > 0:
-                    new_state[0] = self.state[0] + r
-                    break
+            k_ON = random.uniform(-.01, .01)
+            k_OFF = random.uniform(-.01, .01)
+            k_s = random.uniform(-.05, .05)
+            self.state[0] = self.state[0] + k_ON
+            self.state[1] = self.state[1] + k_OFF
+            self.state[2] = self.state[2] + k_s
 
-            while True:
-                r = random.uniform(-.01, .01)
-                if (self.state[1] + r) > 0:
-                    new_state[1] = self.state[1] + r
-                    break
-
-            while True:
-                r = random.uniform(-.05, .05)
-                if (self.state[2] + r) > 0:
-                    new_state[2] = self.state[2] + r
-                    break
-            return new_state
-
-
-        def calculate_energy(self, state):
-            e = objective(state)
+        def energy(self):
+            e = objective(self.state)
             return e
-
-
-        def update(self, new_state):
-            new_energy = self.calculate_energy(new_state)
-            is_accepted = 0
-
-            if math.isnan(new_energy):
-                return is_accepted
-
-            if new_energy < self.energy:
-                self.energy = new_energy
-                self.state = new_state
-                is_accepted = 1
-                if new_energy < self.min_energy:
-                    self.best_state = new_state
-                    self.min_energy = new_energy
-            else:
-                r = random.random()
-                if np.exp(- (new_energy - self.energy)/self.temp ) >= r:
-                    self.energy = new_energy
-                    self.state = new_state
-                    is_accepted = 1
-
-            print new_state, '%0.3f' % self.temp, \
-                "Accepted" if is_accepted==1 else "Not_accepted", \
-                '%0.3f' % self.energy
-            self.temp = self.temp - self.temp/self.step
-            return is_accepted
-
-
-        def optimize(self):
-            while self.temp >= self.min_temp:
-                new_state = self.move()
-                self.update(new_state)
-            return self.state
-
-        def give_best_fit(self):
-            return self.best_state, self.min_energy
-
-    x0 = [.05, .05, .15]
-
     model = TelegramModel(x0)
-    state = model.optimize()
-    best_state, min_energy = model.give_best_fit()
+    model.Tmax = 40000.0
+    model.steps = 2500
+    model.Tmin = 2.5
+    params, logL = model.anneal()
 
-    res_file_name = os.path.join(args.dest, "cell_%d_%s" % (args.column+1, os.path.basename(args.input)))
-    res_file = open(res_file_name, 'w')
-    res_file.write('\t'.join(['k_ON', 'k_OFF', 'k_s', 'deg', 'logL\n']))
-    res_file.write('\t'.join([
-        str(best_state[0]),
-        str(best_state[1]),
-        str(best_state[2]),
-        str(args.deg_rate),
-        str(min_energy) + '\n',
-    ]))
-    print best_state, min_energy
-
-    res = optimize.fmin(objective, best_state)
-    res_file.write('\t'.join([
-        str(res[0]),
-        str(res[1]),
-        str(res[2]),
-        str(args.deg_rate),
-        str(objective(res)) + '\n',
-    ]))
-    res_file.close()
-    print best_state, min_energy
-    # model.Tmax = 40000.0
-    # model.steps = 2500
-    # model.Tmin = 2.5
-    # params, logL = model.anneal()
-    #
-    # print params
-    # print logL
+    print params
+    print logL
     # res = optimize.fmin(objective, params)
 
+    res_file.close()
