@@ -134,6 +134,9 @@ def MCMC_sampling(x0, niter, accept_ratio, signal):
         print Xprop
         Lprop = log_likelihood(signal, Xprop)
 
+        if math.isnan(Lprop):
+            continue
+
         Qprop = -np.sum(log(Xprop))
         Qprev = -np.sum(log(Xprev))
 
@@ -154,13 +157,33 @@ def MCMC_sampling(x0, niter, accept_ratio, signal):
             X[i, :] = Xprev
             L[i] = Lprev
             A[i] = 0
-
         y = 1./(3.*np.sqrt(i + accept_ratio))
         l = exp(log(l) + y*(aprob - accept_ratio))
         S = S + y*( np.dot(np.transpose(log(Xprev) - M), (log(Xprev) - M)) - S)
         M = M + y * (log(Xprev) - M)
         print np.dot(l , S)
     return L, X, A, np.dot(l , S)
+
+
+def generate_random_state(state):
+    while True:
+        r = random.uniform(-.01, .01)
+        if (state[0] + r) > 0:
+            state[0] = state[0] + r
+            break
+
+    while True:
+        r = random.uniform(-.01, .01)
+        if (state[1] + r) > 0:
+            state[1] = state[1] + r
+            break
+
+    while True:
+        r = random.uniform(-.05, .05)
+        if (state[2] + r) > 0:
+            state[2] = state[2] + r
+            break
+    return state
 
 
 if __name__ == '__main__':
@@ -183,6 +206,14 @@ if __name__ == '__main__':
     T = len(time)
     p_max = int(max(signal)/alpha) + 30
     x0 = [0.05, 0.05, 0.15]
+
+    while True:
+        if math.isnan(log_likelihood(signal, x0)):
+            x0 = generate_random_state(x0)
+        else:
+            break
+
+    print x0, log_likelihood(signal, x0)
     L, X, A, C = MCMC_sampling(x0, args.niter, .25, signal)
     res_file_name = os.path.join(args.dest, "cell_%d_%s_mcmc_params" % (args.column+1, os.path.basename(args.input)))
     res_file = open(res_file_name, 'w')
