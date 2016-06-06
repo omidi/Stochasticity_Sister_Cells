@@ -105,10 +105,16 @@ def arguments():
 
 def MCMC_sampling(x0, niter, accept_ratio, signal):
     nvar = 3
-    lamb = 1. / 10000.
-    Loglamb = log(lamb)
+    # lamb = 1.
+    # Loglamb = log(lamb)
     def log_prior(x):
-        return nvar*Loglamb - lamb*np.sum(x)
+        if x[0] > 5:
+            return -np.inf
+        elif x[1] > 5:
+            return -np.inf
+        elif x[2] > 5:
+            return -np.inf
+        return 0
 
     X = np.zeros(nvar*niter, dtype=np.float).reshape(niter, nvar)
     L = np.zeros(niter, dtype=np.float)
@@ -117,12 +123,11 @@ def MCMC_sampling(x0, niter, accept_ratio, signal):
     Xprev = x0
     Lprev = log_likelihood(signal, x0)
     Lprop = Lprev
-
     l = 1
     S = np.matrix(np.identity(nvar) * [.1, .1, .1])
     M = np.matrix(log(x0))
 
-    X[0,:] = x0
+    X[0, :] = x0
     L[0] = Lprev
     A[0] = 1
 
@@ -139,16 +144,15 @@ def MCMC_sampling(x0, niter, accept_ratio, signal):
 
         Qprop = -np.sum(log(Xprop))
         Qprev = -np.sum(log(Xprev))
-
-        aprob = min(1, exp(Lprop+ log_prior(Xprop)+ Qprev - Lprev - log_prior(Xprev) - Qprop))
-
+        print "here: ", log_prior(Xprev), exp(Lprop + log_prior(Xprop) + Qprev - Lprev - log_prior(Xprev) - Qprop)
+        aprob = min(1, exp(Lprop + log_prior(Xprop) + Qprev - Lprev - log_prior(Xprev) - Qprop))
+        print aprob
         r = random.random()
 
-        if r < aprob:
+        if r > aprob:
             print "iter %d:  %f %f %d" % (i + 1, Lprop, Lprev, 1)
             Xprev = Xprop
             Lprev = Lprop
-
             X[i, :] = Xprop
             L[i] = Lprop
             A[i] = 1
@@ -214,6 +218,7 @@ if __name__ == '__main__':
             break
 
     print x0, log_likelihood(signal, x0)
+    x0 = [.05, .05, .15]
     L, X, A, C = MCMC_sampling(x0, args.niter, .25, signal)
     res_file_name = os.path.join(args.dest, "cell_%d_%s_mcmc_params" % (args.column+1, os.path.basename(args.input)))
     res_file = open(res_file_name, 'w')
