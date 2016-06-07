@@ -17,7 +17,7 @@ for(fname in files){
   lines(ellipse(cov(x), centre=colMeans(x), level=.95), lwd=1, col=alpha("grey", .4))
 }
 
-for(fname in files[9:10]){
+for(fname in files[19:20]){
   d = read.table(paste(dirname, fname, sep='/'), header = TRUE)
   dd = subset(d[100:dim(d)[1], ], acc==1)
   x = cbind(dd[,1]/(dd[, 2] + dd[,1]), dd[, 3] / dd[, 1])
