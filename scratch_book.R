@@ -48,14 +48,14 @@ plot_mean_expression_correlation_all_times = function(df, interval=10, name=NA){
     points(xvals[1], corr.vals[1], pch=16, cex=1.2)
     lines(xvals, corr.vals, lty=1, lwd=4)
     abline(h=avg_corr, lty=2, lwd=2, col="grey")
-    plot(m, pch=19, ylim = range(df), xlim = range(df), 
+    plot(m, pch=19, ylim = c(0, max(df)), xlim = c(0, max(df)), 
         cex.axis=1.7, cex.lab=1.8, xlab="Mean signal sister 1", ylab="Mean signal sister 2", 
         bty='n', cex=1.4, cex.main=2, main=sprintf("%s  (%0.0f-%0.0f)%% of cell cycle", name, (index-1)*interval/2 + 1, (index-1)*interval/2 + interval), 
         cex.main=2, col=cols[cc_class])
     # mtext(side = 1, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # mtext(side = 2, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # text(max(m)/1.3, min(m) + (max(m) - min(m))/10, sprintf("Correlation coeff.: %0.2f", cor(m)[1, 2]), cex=1.3)
-    text(13000, 1000, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
+    text(4700, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
     abline(0, 1, lwd=2, lty=2)
     # segments(2000, 2000, 10000, 10000)
     legend("topleft", c("< 14 hr", "< 18 hr & > 14 hr", "> 18 hr"), col = cols[1:3], pch=16, cex=1.6)
@@ -74,6 +74,10 @@ plot_eigne_decomp_expression_correlation_all_time = function(df, interval=10, na
   cc_class = ifelse(cell_cycle_len < 168, 1, ifelse(cell_cycle_len<216, 2, 3))
   df = normalize_time(df)
   require(RColorBrewer)
+  require(ellipse)
+  cols2 = brewer.pal(8, "Paired")
+  cols = brewer.pal(8, "Set1")
+  viol = brewer.pal(8, 'Dark2')[4]
   print(cell_cycle_len)
   index = 1
   corr.vals = c()
@@ -89,26 +93,41 @@ plot_eigne_decomp_expression_correlation_all_time = function(df, interval=10, na
     par(mfrow=c(1, 2), mar=c(5,5,5,2))
     df2 = df[i:(i+interval-1), ]
     m = matrix(colMeans(df2, na.rm = TRUE), nc=2, byrow = TRUE)
-    vals = eigen(cov(m))$values
-    corr.vals = c(corr.vals, vals[2])
-    xvals = c(xvals, vals[1])
-    plot( xvals, corr.vals, pch=16, cex=1.6, xlab="% Cell cycle" , ylab = "Correlation coeff.", 
+    # vals = eigen(cov(m))$values
+    vals = princomp(x = m)
+    # corr.vals = c(corr.vals, vals[2])
+    # xvals = c(xvals, vals[1])
+    corr.vals = c(corr.vals, vals$sdev[2])
+    xvals = c(xvals, vals$sdev[1])
+    plot( xvals, corr.vals, pch=16, cex=1.6, xlab="PC1" , ylab = "PC2", 
           cex.axis=1.6, cex.lab= 1.7, main=name, cex.main=2, bty='n', col=0, 
-          xlim=c(4.8e+06, 1.2e+07))
-    points(xvals[1], corr.vals[1], pch=16, cex=1.2)
-    lines(xvals, corr.vals, lty=1, lwd=4)
-    abline(h=avg_corr, lty=2, lwd=2, col="grey")
-    plot(m, pch=19, ylim = range(df), xlim = range(df), 
+          xlim=c(0, 1500), ylim = c(0, 800))
+          # xlim = c(0, 1.5e+07), ylim=c(0, 2.2e+06))
+    # points(xvals[1], corr.vals[1], pch=4, cex=1.6, col=cols[1])
+    abline(h=corr.vals[1], col=1)
+    abline(v=xvals[1], col=1)
+    print(index)
+    interv = floor(interval)
+    x = 1
+    for (k in seq(1, floor(i), by=interv)) {
+      lines(xvals[k:(k+interv)], corr.vals[k:(k+interv)], lty=1, lwd=4, col=cols2[x])  
+      x = x+1
+      if(x>8) x = 1
+    }
+    
+    # abline(h=avg_corr, lty=2, lwd=2, col="grey")
+    plot(m, pch=19, ylim = c(0, max(df)), xlim = c(0, max(df)), 
          cex.axis=1.7, cex.lab=1.8, xlab="Mean signal sister 1", ylab="Mean signal sister 2", 
          bty='n', cex=1.4, cex.main=2, main=sprintf("%s  (%0.0f-%0.0f)%% of cell cycle", name, (index-1)*interval/2 + 1, (index-1)*interval/2 + interval), 
-         cex.main=2, col=cols[cc_class])
+         cex.main=2, col=0)
+    abline(0, 1, lwd=2, lty=1, col="grey")
+    lines(ellipse(cov(m), centre=apply(m, 2, median), level=.99), lwd=5, col=viol, lty=3)
+    points(m, pch=19, cex=1.4)
     # mtext(side = 1, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # mtext(side = 2, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # text(max(m)/1.3, min(m) + (max(m) - min(m))/10, sprintf("Correlation coeff.: %0.2f", cor(m)[1, 2]), cex=1.3)
-    text(13000, 1000, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
-    abline(0, 1, lwd=2, lty=2)
+    text(4700, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
     # segments(2000, 2000, 10000, 10000)
-    legend("topleft", c("< 14 hr", "< 18 hr & > 14 hr", "> 18 hr"), col = cols[1:3], pch=16, cex=1.6)
     dev.off()
     index = index + 1
     
