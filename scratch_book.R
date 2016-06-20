@@ -30,7 +30,7 @@ plot_mean_expression_correlation_all_times = function(df, interval=10, name=NA){
   index = 1
   corr.vals = c()
   xvals = c()
-  for (i in seq(1, 100 - interval/2 - 1, interval/2)) {
+  for (i in seq(1, 100 - interval/2, interval/2)) {
     # pdf(sprintf('images/frame_%i.pdf', index), height = 6, width = 6)
     if(index>=10) {
       fname = 'images/frame_%i.png'
@@ -55,7 +55,7 @@ plot_mean_expression_correlation_all_times = function(df, interval=10, name=NA){
     # mtext(side = 1, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # mtext(side = 2, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # text(max(m)/1.3, min(m) + (max(m) - min(m))/10, sprintf("Correlation coeff.: %0.2f", cor(m)[1, 2]), cex=1.3)
-    text(4700, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
+    text(12500, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
     abline(0, 1, lwd=2, lty=2)
     # segments(2000, 2000, 10000, 10000)
     legend("topleft", c("< 14 hr", "< 18 hr & > 14 hr", "> 18 hr"), col = cols[1:3], pch=16, cex=1.6)
@@ -75,6 +75,7 @@ plot_eigne_decomp_expression_correlation_all_time = function(df, interval=10, na
   df = normalize_time(df)
   require(RColorBrewer)
   require(ellipse)
+  require(scales)
   cols2 = brewer.pal(8, "Paired")
   cols = brewer.pal(8, "Set1")
   viol = brewer.pal(8, 'Dark2')[4]
@@ -82,7 +83,7 @@ plot_eigne_decomp_expression_correlation_all_time = function(df, interval=10, na
   index = 1
   corr.vals = c()
   xvals = c()
-  for (i in seq(1, 100 - interval/2 - 1, interval/2)) {
+  for (i in seq(1, 100 - interval/2, interval/2)) {
     # pdf(sprintf('images/frame_%i.pdf', index), height = 6, width = 6)
     if(index>=10) {
       fname = 'images/eigen_frame_%i.png'
@@ -101,16 +102,16 @@ plot_eigne_decomp_expression_correlation_all_time = function(df, interval=10, na
     xvals = c(xvals, vals$sdev[1])
     plot( xvals, corr.vals, pch=16, cex=1.6, xlab="PC1" , ylab = "PC2", 
           cex.axis=1.6, cex.lab= 1.7, main=name, cex.main=2, bty='n', col=0, 
-          xlim=c(0, 1500), ylim = c(0, 800))
+          xlim=c(0, 4000), ylim = c(0, 1800))
           # xlim = c(0, 1.5e+07), ylim=c(0, 2.2e+06))
     # points(xvals[1], corr.vals[1], pch=4, cex=1.6, col=cols[1])
     abline(h=corr.vals[1], col=1)
     abline(v=xvals[1], col=1)
     print(index)
-    interv = floor(interval)
+    interv = 8
     x = 1
     for (k in seq(1, floor(i), by=interv)) {
-      lines(xvals[k:(k+interv)], corr.vals[k:(k+interv)], lty=1, lwd=4, col=cols2[x])  
+      lines(xvals[k:(k+interv)], corr.vals[k:(k+interv)], lty=1, lwd=4, col=alpha(cols2[x], .5))  
       x = x+1
       if(x>8) x = 1
     }
@@ -121,18 +122,105 @@ plot_eigne_decomp_expression_correlation_all_time = function(df, interval=10, na
          bty='n', cex=1.4, cex.main=2, main=sprintf("%s  (%0.0f-%0.0f)%% of cell cycle", name, (index-1)*interval/2 + 1, (index-1)*interval/2 + interval), 
          cex.main=2, col=0)
     abline(0, 1, lwd=2, lty=1, col="grey")
-    lines(ellipse(cov(m), centre=apply(m, 2, median), level=.99), lwd=5, col=viol, lty=3)
+    lines(ellipse(cov(m), centre=apply(m, 2, median) + c(2000, 2000), level=.99), lwd=5, col=viol, lty=3)
     points(m, pch=19, cex=1.4)
     # mtext(side = 1, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # mtext(side = 2, text = "Mean signal sister 2", line = 5, cex = 1.6)
     # text(max(m)/1.3, min(m) + (max(m) - min(m))/10, sprintf("Correlation coeff.: %0.2f", cor(m)[1, 2]), cex=1.3)
-    text(4700, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
+    text(12500, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
     # segments(2000, 2000, 10000, 10000)
     dev.off()
     index = index + 1
     
   }
 }
+
+calculate_extrinsic_intrinsic = function(m) {
+  var_sigma = sum((m[,1]-m[,2])^2)/dim(m)[1]
+  z = rowMeans(m)
+  var_z = sum((z - mean(z))^2)/length(z)
+  v_int = var_sigma/2 
+  v_ext = (length(z) / (length(z) - 1))*var_z - var_sigma/4 
+  list(intrinsic=v_int, extrinsic=v_ext)
+}
+
+plot_intrinsic_extrinsic_expression_all_time = function(df, interval=10, name=NA){
+  cols = brewer.pal(8, "Set1")
+  m = matrix(colMeans(df, na.rm = TRUE), nc=2, byrow = TRUE) 
+  avg_corr = cor(m)[1, 2]
+  cell_cycle_len = sapply(1:dim(df)[2], function(col) length(df[!is.na( df[, col]), col]))
+  cc_class = ifelse(cell_cycle_len < 168, 1, ifelse(cell_cycle_len<216, 2, 3))
+  df = normalize_time(df)
+  require(RColorBrewer)
+  require(ellipse)
+  require(scales)
+  cols2 = brewer.pal(8, "Paired")
+  cols = brewer.pal(8, "Set1")
+  viol = brewer.pal(8, 'Dark2')[4]
+  print(cell_cycle_len)
+  index = 1
+  corr.vals = c()
+  xvals = c()
+  for (i in seq(1, 100 - interval/2, interval/2)) {
+    # pdf(sprintf('images/frame_%i.pdf', index), height = 6, width = 6)
+    if(index>=10) {
+      fname = 'images/ext_int_frame_%i.png'
+    } else {
+      fname = 'images/ext_int_frame_0%i.png'
+    }
+    png(sprintf(fname, index), width = 1000, height = 500)
+    par(mfrow=c(1, 2), mar=c(5,5,5,2))
+    df2 = df[i:(i+interval-1), ]
+    m = matrix(colMeans(df2, na.rm = TRUE), nc=2, byrow = TRUE)
+    # vals = eigen(cov(m))$values
+    vars = calculate_extrinsic_intrinsic(m)
+    # corr.vals = c(corr.vals, vals[2])
+    # xvals = c(xvals, vals[1])
+    denom = mean(m[,1]) * mean(m[,2])
+    corr.vals = c(corr.vals, vars$extrinsic / denom)
+    xvals = c(xvals, vars$intrinsic / denom)
+    plot( xvals, corr.vals, pch=16, cex=1.6, xlab="% Cell cycle" , ylab = "Noise level", 
+          cex.axis=1.6, cex.lab= 1.7, main=name, cex.main=2, bty='n', col=0, 
+          xlim=c(0, 100), ylim = c(0, .6)) 
+    lines( seq(1, length(xvals)) , xvals, lwd=4, col=cols[1])
+    lines( seq(1, length(xvals)) , corr.vals, lwd=4, col=cols[2])
+    legend('topleft', c('Intrinsic', 'Extrinsic'), col=cols[1:2], lty=1, lwd=4, cex=1.5)
+    # 
+    # plot( xvals, corr.vals, pch=16, cex=1.6, xlab="Intrinsic noise" , ylab = "Extrinsic noise", 
+    #       cex.axis=1.6, cex.lab= 1.7, main=name, cex.main=2, bty='n', col=0, 
+    #       xlim=c(0, xvals[1] + .2), ylim = c(0, corr.vals[1]+.2))
+    # xlim = c(0, 1.5e+07), ylim=c(0, 2.2e+06))
+    # points(xvals[1], corr.vals[1], pch=4, cex=1.6, col=cols[1])
+    # abline(h=corr.vals[1], col="grey")
+    # abline(v=xvals[1], col="grey")
+    print(index)
+    # interv = 10
+    # x = 1
+    # for (k in seq(1, floor(i), by=interv)) {
+    #   lines(xvals[k:(k+interv)], corr.vals[k:(k+interv)], lty=1, lwd=4, col=alpha(cols2[x], .5))  
+    #   x = x+1
+    #   if(x>8) x = 1
+    # }
+    
+    # abline(h=avg_corr, lty=2, lwd=2, col="grey")
+    plot(m, pch=19, ylim = c(0, max(df)), xlim = c(0, max(df)), 
+         cex.axis=1.7, cex.lab=1.8, xlab="Mean signal sister 1", ylab="Mean signal sister 2", 
+         bty='n', cex=1.4, cex.main=2, main=sprintf("%s  (%0.0f-%0.0f)%% of cell cycle", name, (index-1)*interval/2 + 1, (index-1)*interval/2 + interval), 
+         cex.main=2, col=0)
+    abline(0, 1, lwd=2, lty=1, col="grey")
+    # lines(ellipse(cov(m), centre=apply(m, 2, median), level=.99), lwd=5, col=viol, lty=3)
+    points(m, pch=19, cex=1.4)
+    # mtext(side = 1, text = "Mean signal sister 2", line = 5, cex = 1.6)
+    # mtext(side = 2, text = "Mean signal sister 2", line = 5, cex = 1.6)
+    # text(max(m)/1.3, min(m) + (max(m) - min(m))/10, sprintf("Correlation coeff.: %0.2f", cor(m)[1, 2]), cex=1.3)
+    text(12500, 200, sprintf("Corr: %0.2f", cor(m)[1, 2]), cex=1.6)
+    # segments(2000, 2000, 10000, 10000)
+    dev.off()
+    index = index + 1
+    
+  }
+}
+
 
 COV<- function(x,y) {
   if(length(x)!=length(y)) {stop('x must have the same length as y ')}
